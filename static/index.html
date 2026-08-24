@@ -1,1 +1,145 @@
-<!-- Static frontend UI placeholder for customer support chat interface -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aster & Row — Customer Support Agent</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Top Navigation Header -->
+        <header class="app-header">
+            <div class="brand-group">
+                <div class="brand-logo" aria-hidden="true">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2L2 19h20L12 2z"/>
+                        <path d="M12 9v4"/>
+                        <path d="M12 17h.01"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="brand-title">Aster &amp; Row</h1>
+                    <p class="brand-subtitle">Customer Support AI Agent</p>
+                </div>
+            </div>
+
+            <div class="header-actions">
+                <div class="status-indicator" role="status" aria-label="System status online">
+                    <span class="status-dot"></span>
+                    <span class="status-text">Agent Ready</span>
+                </div>
+                <button id="new-chat-btn" class="btn btn-secondary" title="Start a fresh conversation session" aria-label="New Conversation">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                        <path d="M3 3v5h5"/>
+                        <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+                        <path d="M16 21h5v-5"/>
+                    </svg>
+                    <span>New Chat</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Workspace -->
+        <main class="main-content">
+            <!-- Chat Conversation Column -->
+            <section class="chat-section" aria-label="Chat Conversation">
+                <div id="chat-messages" class="chat-messages" role="log" aria-live="polite" aria-relevant="additions">
+                    <div class="message assistant-message welcome-message">
+                        <div class="message-avatar" aria-hidden="true">🌲</div>
+                        <div class="message-body">
+                            <div class="message-sender">Aster &amp; Row Support</div>
+                            <div class="message-content">
+                                <p>Hello! I am your Aster &amp; Row customer support assistant. I can help look up order tracking, explain return policies, warranty terms, and provide product care instructions.</p>
+                                <p class="suggestion-prompt"><strong>Quick examples you can ask:</strong></p>
+                                <ul class="suggestion-list">
+                                    <li><button class="suggestion-chip" data-msg="Where is ORD-1007?">"Where is ORD-1007?"</button></li>
+                                    <li><button class="suggestion-chip" data-msg="What are the warranty periods for bags and drinkware?">"What are the warranty periods for bags and drinkware?"</button></li>
+                                    <li><button class="suggestion-chip" data-msg="How long do I have to return an unused backpack?">"How long do I have to return an unused backpack?"</button></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Input Box Area -->
+                <div class="chat-input-area">
+                    <form id="chat-form" class="chat-form">
+                        <label for="user-input" class="sr-only">Type your message to Aster &amp; Row customer support</label>
+                        <textarea 
+                            id="user-input" 
+                            class="chat-textarea" 
+                            placeholder="Ask about orders, returns, warranty, product care... (Press Enter to send)"
+                            rows="2"
+                            maxlength="4000"
+                            required
+                        ></textarea>
+                        <button type="submit" id="send-btn" class="btn btn-primary" aria-label="Send message">
+                            <span class="btn-text">Send</span>
+                            <svg class="send-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <line x1="22" y1="2" x2="11" y2="13"></line>
+                                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                            </svg>
+                        </button>
+                    </form>
+                    <div class="input-hint">Press <strong>Enter</strong> to send, <strong>Shift + Enter</strong> for a new line</div>
+                </div>
+            </section>
+
+            <!-- Inspection / Debug Panel Column -->
+            <aside class="debug-panel" aria-label="Turn Observability and Inspection Panel">
+                <div class="debug-header">
+                    <div class="debug-title-group">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="16" x2="12" y2="12"></line>
+                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                        </svg>
+                        <h2 class="debug-title">Turn Inspection</h2>
+                    </div>
+                    <span id="session-badge" class="session-badge" title="Active browser session ID">Session: ...</span>
+                </div>
+
+                <div class="debug-content">
+                    <!-- Handoff Status Card -->
+                    <div class="debug-card">
+                        <h3 class="debug-card-title">Human Handoff Status</h3>
+                        <div id="handoff-indicator" class="handoff-status handoff-none">
+                            <span class="handoff-icon" aria-hidden="true">✓</span>
+                            <span class="handoff-text">No Handoff Required</span>
+                        </div>
+                    </div>
+
+                    <!-- Cited Sources Card -->
+                    <div class="debug-card">
+                        <div class="debug-card-header">
+                            <h3 class="debug-card-title">Cited Policy Sources</h3>
+                            <span id="sources-count" class="badge">0</span>
+                        </div>
+                        <div id="sources-list" class="sources-container">
+                            <div class="empty-state">No policy sources cited in latest turn.</div>
+                        </div>
+                    </div>
+
+                    <!-- Tool Calls Card -->
+                    <div class="debug-card">
+                        <div class="debug-card-header">
+                            <h3 class="debug-card-title">Executed Tool Calls</h3>
+                            <span id="tool-calls-count" class="badge">0</span>
+                        </div>
+                        <div id="tool-calls-list" class="tool-calls-container">
+                            <div class="empty-state">No tool calls executed in latest turn.</div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <script src="/static/app.js" defer></script>
+</body>
+</html>
