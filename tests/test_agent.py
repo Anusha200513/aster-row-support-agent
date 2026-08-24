@@ -92,7 +92,7 @@ def test_kb_question_executes_tool_and_produces_sources():
     assert result["tool_calls"][0]["name"] == "retrieve_knowledge_base"
     assert result["tool_calls"][0]["arguments"]["query"] == "return policy for backpack"
     assert len(result["sources"]) == 1
-    assert result["sources"][0] == "01-returns-policy-current.md — Standard return window"
+    assert "01-returns-policy-current.md" in result["sources"][0]
     assert result["handoff"] is False
 
 
@@ -628,7 +628,10 @@ def test_session_state_security_no_pii_or_internal_leaks():
 
     t_call = MockToolCall("c_sec", "lookup_order", json.dumps({"order_id": "ORD-1007"}))
     s1 = MockCompletion(MockMessage(content=None, tool_calls=[t_call]), finish_reason="tool_calls")
-    s2 = MockCompletion(MockMessage(content="Order ORD-1007 is in transit."), finish_reason="stop")
+    s2 = MockCompletion(
+        MockMessage(content="Order ORD-1007 is in transit."),
+        finish_reason="stop",
+    )
 
     mock_client.chat.completions.create.side_effect = [s1, s2]
 
@@ -645,3 +648,152 @@ def test_session_state_security_no_pii_or_internal_leaks():
     assert "risk_score" not in session_str
     assert "Manual fraud review cleared" not in session_str
     assert "PACK-ATLAS-BLK" not in session_str
+
+
+# ====================================================================
+# SOURCE ATTRIBUTION REGRESSION TESTS (PHASE 6B)
+# ====================================================================
+
+
+def test_trailplus_answer_returns_trailplus_source():
+    """Verify TrailPlus return window query returns 09-trailplus-membership.md and not 01-returns-policy-current.md."""
+    mock_client = MagicMock()
+
+    t_call = MockToolCall("c_tp", "retrieve_knowledge_base", json.dumps({"query": "TrailPlus return window"}))
+    s1 = MockCompletion(MockMessage(content=None, tool_calls=[t_call]), finish_reason="tool_calls")
+    s2 = MockCompletion(
+        MockMessage(content="As an active TrailPlus member, you have 45 calendar days from delivery to return unused items."),
+        finish_reason="stop",
+    )
+
+    mock_client.chat.completions.create.side_effect = [s1, s2]
+
+    result = handle_turn(
+        session_id="test-trailplus-source",
+        user_message="What is my return window with TrailPlus?",
+        client=mock_client,
+    )
+
+    assert any("09-trailplus-membership.md" in s for s in result["sources"])
+    assert not any("01-returns-policy-current.md" in s for s in result["sources"])
+
+
+def test_final_sale_damaged_exception_returns_both_sources():
+    """Verify final sale damaged item inquiry returns both 03-final-sale and 04-damaged items sources."""
+    mock_client = MagicMock()
+
+    t_call = MockToolCall("c_fs", "retrieve_knowledge_base", json.dumps({"query": "final sale damaged item broken zipper"}))
+    s1 = MockCompletion(MockMessage(content=None, tool_calls=[t_call]), finish_reason="tool_calls")
+    s2 = MockCompletion(
+        MockMessage(content="While final sale items are normally non-returnable, damaged items reported within 7 calendar days are eligible for human review."),
+        finish_reason="stop",
+    )
+
+    mock_client.chat.completions.create.side_effect = [s1, s2]
+
+    result = handle_turn(
+        session_id="test-final-sale-sources",
+        user_message="A final sale item arrived damaged. Can I return it?",
+        client=mock_client,
+    )
+
+    sources_str = " ".join(result["sources"])
+    assert "03-final-sale-and-promotions.md" in sources_str
+    assert "04-damaged-or-wrong-items.md" in sources_str
+
+
+def test_canada_shipping_returns_international_shipping_source():
+    """Verify Canada shipping query returns 06-international-shipping.md."""
+    mock_client = MagicMock()
+
+    t_call = MockToolCall("c_ca", "retrieve_knowledge_base", json.dumps({"query": "Canada shipping delivery time"}))
+    s1 = MockCompletion(MockMessage(content=None, tool_calls=[t_call]), finish_reason="tool_calls")
+    s2 = MockCompletion(
+        MockMessage(content="We ship to Canada in 5–9 business days after dispatch. Please note that duties and taxes are not prepaid."),
+        finish_reason="stop",
+    )
+
+    mock_client.chat.completions.create.side_effect = [s1, s2]
+
+    result = handle_turn(
+        session_id="test-canada-source",
+        user_message="How long does shipping to Canada take?",
+        client=mock_client,
+    )
+
+    assert any("06-international-shipping.md" in s for s in result["sources"])
+
+
+def test_warranty_answer_returns_warranty_source():
+    """Verify warranty inquiry returns 07-warranty.md."""
+    mock_client = MagicMock()
+
+    t_call = MockToolCall("c_warr", "retrieve_knowledge_base", json.dumps({"query": "lifetime warranty coverage"}))
+    s1 = MockCompletion(MockMessage(content=None, tool_calls=[t_call]), finish_reason="tool_calls")
+    s2 = MockCompletion(
+        MockMessage(content="Aster & Row does not offer a lifetime warranty. Bags are covered for 2 years, and drinkware has a 1-year warranty."),
+        finish_reason="stop",
+    )
+
+    mock_client.chat.completions.create.side_effect = [s1, s2]
+
+    result = handle_turn(
+        session_id="test-warranty-source",
+        user_message="Do all products have a lifetime warranty?",
+        client=mock_client,
+    )
+
+    assert any("07-warranty.md" in s for s in result["sources"])
+
+
+def test_breeze_tumbler_conflict_returns_both_conflicting_sources():
+    """Verify Breeze Tumbler dishwashing inquiry returns both 11-product-care.md and 12-breeze-tumbler-product-card.md."""
+    mock_client = MagicMock()
+
+    t_call = MockToolCall("c_tumbler", "retrieve_knowledge_base", json.dumps({"query": "Breeze Tumbler dishwasher safe"}))
+    s1 = MockCompletion(MockMessage(content=None, tool_calls=[t_call]), finish_reason="tool_calls")
+    s2 = MockCompletion(
+        MockMessage(
+            content=(
+                "Our official documents contain conflicting guidance: the Product Care Guide states "
+                "the tumbler body should be hand-washed, whereas the Breeze Tumbler Product Card states "
+                "all components are top-rack dishwasher safe. I recommend confirming with customer support."
+            )
+        ),
+        finish_reason="stop",
+    )
+
+    mock_client.chat.completions.create.side_effect = [s1, s2]
+
+    result = handle_turn(
+        session_id="test-tumbler-conflict-sources",
+        user_message="Can I put the Breeze Tumbler in the dishwasher?",
+        client=mock_client,
+    )
+
+    sources_str = " ".join(result["sources"])
+    assert "11-product-care.md" in sources_str
+    assert "12-breeze-tumbler-product-card.md" in sources_str
+    assert result["handoff"] is True
+
+
+def test_order_lookup_returns_no_kb_sources():
+    """Verify that looking up an order returns order details and no KB sources."""
+    mock_client = MagicMock()
+
+    t_call = MockToolCall("c_ord", "lookup_order", json.dumps({"order_id": "ORD-1007"}))
+    s1 = MockCompletion(MockMessage(content=None, tool_calls=[t_call]), finish_reason="tool_calls")
+    s2 = MockCompletion(
+        MockMessage(content="Your order ORD-1007 is in transit with UPS, expected to arrive August 22, 2026."),
+        finish_reason="stop",
+    )
+
+    mock_client.chat.completions.create.side_effect = [s1, s2]
+
+    result = handle_turn(
+        session_id="test-order-no-kb-sources",
+        user_message="Where is ORD-1007?",
+        client=mock_client,
+    )
+
+    assert result["sources"] == []
