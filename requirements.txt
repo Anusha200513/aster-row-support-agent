@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+groq
+sentence-transformers
+numpy
+python-dotenv
+pytest
+pyyaml
