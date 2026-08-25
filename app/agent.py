@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import unicodedata
 from typing import Any
 
 from dotenv import load_dotenv
@@ -30,96 +31,107 @@ UNTRUSTED_TOOL_DATA_HEADER = (
 # Authoritative KB document signatures for deterministic citation and content attribution
 DOC_SIGNATURES: dict[str, dict[str, Any]] = {
     "01-returns-policy-current.md": {
-        "title": "Returns Policy",
+        "title": ["Returns Policy", "Return Policy", "Current Returns Policy"],
         "keywords": [
             "30 calendar days", "30 days", "30-day", "standard return window",
-            "standard return policy", "regular return", "30-day return", "return window is 30"
+            "standard return policy", "regular return", "30-day return", "return window is 30",
+            "30 calendar day", "return policy is 30"
         ],
         "is_authoritative": True,
     },
     "02-returns-policy-legacy.md": {
-        "title": "Legacy Returns Policy",
+        "title": ["Returns Policy — Legacy Version", "Legacy Returns Policy", "Legacy Return Policy", "Returns Policy - Legacy Version"],
         "keywords": ["legacy return", "60 calendar days", "60 days"],
         "is_authoritative": False,  # Superseded
     },
     "03-final-sale-and-promotions.md": {
-        "title": "Final Sale and Promotions",
-        "keywords": ["final sale", "final-sale", "promotional items", "clearance", "non-returnable"],
+        "title": ["Final Sale and Promotional Purchases", "Final Sale and Promotions", "Final Sale Policy", "Promotions"],
+        "keywords": ["final sale", "final-sale", "promotional items", "clearance", "non-returnable", "cannot be returned"],
         "is_authoritative": True,
     },
     "04-damaged-or-wrong-items.md": {
-        "title": "Damaged or Wrong Items",
+        "title": ["Damaged, Defective, or Wrong Items", "Damaged or Wrong Items", "Damaged Items Policy"],
         "keywords": [
             "damaged", "wrong item", "defective", "broken", "7 calendar days",
-            "7 days", "report within 7", "damage claim", "photo"
+            "7 days", "report within 7", "damage claim", "photo", "reported within 7", "within 7 days"
         ],
         "is_authoritative": True,
     },
-    "05-repairs-and-replacements.md": {
-        "title": "Repairs and Replacements",
-        "keywords": ["repair", "repairs", "replacement part", "zipper repair"],
+    "05-domestic-shipping.md": {
+        "title": ["Domestic Shipping", "Domestic Shipping Policy"],
+        "keywords": [
+            "domestic shipping", "3-5 business days", "3–5 business days", "free standard shipping",
+            "$75", "processing time", "1-2 business days", "1–2 business days", "contiguous united states"
+        ],
         "is_authoritative": True,
     },
     "06-international-shipping.md": {
-        "title": "International Shipping",
+        "title": ["International Shipping", "Shipping Policy", "International Shipping Policy"],
         "keywords": [
             "international shipping", "shipping to canada", "canada", "germany",
-            "5-9 business days", "5–9 business days", "duties", "customs", "taxes", "import fee"
+            "5-9 business days", "5–9 business days", "5 to 9 business days", "duties", "customs", "taxes", "import fee", "import fees"
         ],
         "is_authoritative": True,
     },
     "07-warranty.md": {
-        "title": "Warranty Policy",
+        "title": ["Limited Product Warranty", "Warranty Policy", "Warranty", "Limited Warranty"],
         "keywords": [
-            "warranty", "lifetime warranty", "2 years", "2-year", "1 year", "1-year", "warranty coverage"
+            "warranty", "lifetime warranty", "2 years", "2-year", "1 year", "1-year", "warranty coverage", "two years", "one year"
         ],
         "is_authoritative": True,
     },
-    "08-sustainability-and-materials.md": {
-        "title": "Sustainability and Materials",
-        "keywords": ["sustainability", "recycled", "pfc-free", "bluesign", "vegan", "fabric", "adhesive"],
+    "08-order-changes-and-cancellations.md": {
+        "title": ["Order Changes and Cancellations", "Order Cancellation", "Cancellation Policy", "Order Changes"],
+        "keywords": [
+            "order changes", "cancellation window", "30 minutes", "address changes",
+            "cannot be cancelled", "quantity changes", "pending status", "order cancellation"
+        ],
         "is_authoritative": True,
     },
     "09-trailplus-membership.md": {
-        "title": "TrailPlus Membership",
+        "title": ["TrailPlus Membership Benefits", "TrailPlus Membership", "TrailPlus"],
         "keywords": [
             "trailplus", "trail plus", "45 calendar days", "45 days", "45-day",
-            "trailplus member", "membership return"
+            "trailplus member", "membership return", "45-calendar-day"
         ],
         "is_authoritative": True,
     },
     "10-gift-cards-and-price-adjustments.md": {
-        "title": "Gift Cards and Price Adjustments",
+        "title": ["Gift Cards and Price Adjustments", "Price Adjustments", "Price Adjustment Policy"],
         "keywords": [
             "price adjustment", "price adjustments", "14 days", "14 calendar days",
-            "gift card", "coupon code", "flash sale"
+            "gift card", "coupon code", "flash sale", "14-day", "7 calendar days", "7 days"
         ],
         "is_authoritative": True,
     },
     "11-product-care.md": {
-        "title": "Product Care",
+        "title": ["Product Care Guide", "Product Care", "Care Guide"],
         "keywords": [
-            "product care", "care guide", "hand-wash", "hand wash", "spot clean",
-            "mild soap", "submerge", "boiling water", "care instructions"
+            "product care", "care guide", "hand-wash", "hand wash", "handwashed", "hand-washed",
+            "handwashing", "wash by hand", "spot clean", "mild soap", "submerge", "boiling water",
+            "care instructions", "stainless-steel body", "body should be hand-washed", "top rack"
         ],
         "is_authoritative": True,
     },
     "12-breeze-tumbler-product-card.md": {
-        "title": "Breeze Tumbler Product Card",
+        "title": ["Breeze Tumbler — Product Information", "Breeze Tumbler Product Card", "Breeze Tumbler - Product Information", "Breeze Tumbler"],
         "keywords": [
             "breeze tumbler", "product card", "dishwasher safe", "dishwasher",
-            "copper lining", "18/8 stainless"
+            "copper lining", "18/8 stainless", "all components are dishwasher safe"
         ],
         "is_authoritative": True,
     },
-    "13-summit-backpack-product-card.md": {
-        "title": "Summit Backpack Product Card",
-        "keywords": ["summit backpack", "summit pack", "40l capacity"],
+    "13-support-escalation.md": {
+        "title": ["Support Escalation and Handoff Rules", "Support Escalation", "Escalation Rules", "Support Escalation Rules"],
+        "keywords": [
+            "support escalation", "escalation rules", "recommend human assistance",
+            "source conflicts", "human handoff", "human assistance", "support specialist"
+        ],
         "is_authoritative": True,
     },
     "14-internal-content-migration-notes.md": {
-        "title": "Internal Migration Notes",
-        "keywords": ["migration note", "draft note", "migration notes"],
+        "title": ["Content Migration Scratchpad", "Internal Migration Notes", "Migration Notes"],
+        "keywords": ["migration note", "draft note", "migration notes", "scratchpad"],
         "is_authoritative": False,  # Draft / non-authoritative
     },
 }
@@ -181,6 +193,7 @@ class SessionState:
         self.session_id = session_id
         self.messages: list[dict[str, Any]] = []
         self.last_order_id: str | None = None
+        self.candidate_sources: list[str] = []
 
     def add_turn(self, new_messages: list[dict[str, Any]]) -> None:
         """Append new messages for this turn and maintain bounded history."""
@@ -281,6 +294,9 @@ def execute_tool(name: str, raw_args: str | dict[str, Any]) -> tuple[dict[str, A
         try:
             order_result = orders_lookup_order(order_id=order_id)
             handoff_flag = bool(order_result.get("needs_human_handoff", False))
+            # Unknown order lookup (found=False) deterministically requires handoff
+            if order_result.get("found") is False:
+                handoff_flag = True
             return order_result, [], handoff_flag
         except Exception as e:
             return {"error": f"Error looking up order: {e}"}, [], False
@@ -294,10 +310,10 @@ def extract_cited_sources(
     candidate_sources: list[str],
     executed_tools: list[tuple[str, dict[str, Any]]] | None = None,
 ) -> list[str]:
-    """Filter candidate sources to only those actually cited or used as authority in the final answer.
+    """Extract and attribute only authoritative sources substantively cited in the final answer.
 
-    Identifies cited or authoritative sources via:
-    1. Direct filename citation (e.g. '[09-trailplus-membership.md]')
+    Attribution rules:
+    1. Direct filename citation (e.g. '09-trailplus-membership.md')
     2. Document title / heading citation (e.g. 'TrailPlus Membership policy')
     3. Substantive content usage of official documents in the final response
     4. Explicitly filters out superseded, draft, and non-authoritative documents
@@ -305,14 +321,22 @@ def extract_cited_sources(
     if not answer or not candidate_sources:
         return []
 
-    # If executed_tools is provided, ensure retrieve_knowledge_base was actually executed
+    # If executed_tools is provided, ensure pure order-only sessions with zero KB calls return []
     if executed_tools is not None:
-        kb_calls = [res for name, res in executed_tools if name == "retrieve_knowledge_base"]
-        if not kb_calls:
+        order_only = (
+            all(name == "lookup_order" for name, _ in executed_tools)
+            and not any(name == "retrieve_knowledge_base" for name, _ in executed_tools)
+        )
+        if order_only and not candidate_sources:
             return []
 
     cited: list[str] = []
-    answer_lower = answer.lower()
+    norm_answer = unicodedata.normalize("NFKC", answer)
+    norm_answer = norm_answer.replace("’", "'").replace("‘", "'").replace("“", '"').replace("”", '"')
+    norm_answer = re.sub(r"[\u2010\u2011\u2012\u2013\u2014\u2015\u2212]", "-", norm_answer)
+    norm_answer = re.sub(r"(\*\*|\*|__|_|`)", "", norm_answer)
+    norm_answer = re.sub(r"\s+", " ", norm_answer)
+    answer_lower = norm_answer.lower()
 
     # Map candidate filename -> list of candidate source strings
     file_to_candidates: dict[str, list[str]] = {}
@@ -334,7 +358,8 @@ def extract_cited_sources(
             continue
 
         fn_clean = fn.lower()
-        title_clean = str(doc_info.get("title", "")).lower()
+        title_raw = doc_info.get("title", "")
+        title_list = title_raw if isinstance(title_raw, list) else [str(title_raw)]
         keywords = doc_info.get("keywords", [])
 
         # Match conditions:
@@ -342,7 +367,7 @@ def extract_cited_sources(
         direct_filename_citation = (fn_clean in answer_lower) or (fn_clean.replace(".md", "") in answer_lower)
 
         # 2. Explicit citation of document title
-        title_citation = bool(title_clean and title_clean in answer_lower)
+        title_citation = any(t.lower() in answer_lower for t in title_list if t)
 
         # 3. Substantive content usage: key signature phrases from this document appear in answer
         content_usage = any(kw.lower() in answer_lower for kw in keywords)
@@ -370,22 +395,155 @@ def extract_cited_sources(
     return cited
 
 
-def detect_source_conflict_or_handoff(answer: str, hard_handoff: bool) -> bool:
-    """Determine whether human handoff is required based on hard flags and answer signals."""
+def is_explicit_unsupported_action_request(user_message: str) -> bool:
+    """Detect whether user is explicitly demanding that the agent perform an unsupported operational action
+    (e.g., cancel order, process refund/credit, change address, apply adjustment to order).
+    """
+    if not user_message:
+        return False
+    norm = unicodedata.normalize("NFKC", user_message).lower()
+    norm = re.sub(r"\s+", " ", norm)
+
+    action_request_patterns = [
+        # Explicit cancellation
+        r"\b(cancel\s+(my\s+)?(order|ord-)|cancel\s+(it|this)\s+(for\s+me|immediately|now)|process\s+(a\s+|my\s+)?cancellation)\b",
+        # Explicit refund / credit demand
+        r"\b(issue\s+(me\s+)?(a\s+|the\s+)?(refund|credit|difference)|process\s+(a\s+|my\s+)?refund|refund\s+(me|my\s+(money|order|card|account)|the\s+difference)|credit\s+(my\s+)?(order|account|card))\b",
+        # Explicit address change
+        r"\b(change|update|modify|switch)\s+(my\s+|the\s+)?(shipping\s+|delivery\s+)?address\b",
+        # Explicit replacement demand
+        r"\b(send\s+(me\s+)?a\s+replacement|replace\s+(my\s+)?(order|item)|process\s+(a\s+)?replacement)\b",
+        # Explicit price adjustment / discount application demand on an order
+        r"\b(apply\b[^\n.!?]*\b(price\s+adjustment|discount|coupon|promo)\b[^\n.!?]*\b(to\s+(my\s+)?order|right\s+now|now))\b",
+        r"\b(process\s+(a\s+|the\s+)?price\s+adjustment\s+(and|for|on)\b)",
+        r"\b(change\s+(the\s+)?price\s+of\s+(my\s+)?order)\b",
+        r"\b(can\s+you\s+(apply|process|issue|change|cancel|refund|credit)\b[^\n.!?]*\b(to\s+my\s+order|the\s+difference|my\s+order|the\s+price|for\s+me))\b",
+        r"\b(credit\s+(my\s+)?order\b[^\n.!?]*\b(price\s+difference|difference))\b",
+    ]
+    for pattern in action_request_patterns:
+        if re.search(pattern, norm, re.IGNORECASE):
+            return True
+    return False
+
+
+def detect_source_conflict_or_handoff(answer: str, hard_handoff: bool, user_message: str = "") -> bool:
+    """Determine whether human handoff is required based on hard flags, answer signals, and request context."""
     if hard_handoff:
         return True
 
-    # Check for explicit statements of conflict, contradictions, or human handoff recommendations
+    if not answer or not answer.strip():
+        return False
+
+    norm_answer = unicodedata.normalize("NFKC", answer)
+    norm_answer = norm_answer.replace("’", "'").replace("‘", "'").replace("“", '"').replace("”", '"')
+    norm_answer = re.sub(r"[\u2010\u2011\u2012\u2013\u2014\u2015\u2212]", "-", norm_answer)
+    norm_answer = re.sub(r"(\*\*|\*|__|_|`)", "", norm_answer)
+    norm_answer = re.sub(r"\s+", " ", norm_answer)
+
+    # 1. Source conflict / contradiction signals
     conflict_patterns = [
         r"\b(sources? conflict|conflicting (policy|policies|sources?|guidance|information|documents?))\b",
-        r"\b(information is inconsistent|documents conflict|direct conflict|contradict(ory|ion)?)\b",
-        r"\b(recommend(ing)? (human|support|an agent|confirming with human) confirmation)\b",
-        r"\b(connect with a human|transfer (you )?to a human|speak with a human|contact (a )?human|reach out to support)\b",
-        r"\b(human support|human agent|support team|customer support representative)\b",
+        r"\b(information is inconsistent|documents conflict|direct conflict|contradict(ory|ion)?|conflicting guidance)\b",
     ]
-
     for pattern in conflict_patterns:
-        if re.search(pattern, answer, re.IGNORECASE):
+        if re.search(pattern, norm_answer, re.IGNORECASE):
+            return True
+
+    # 2. Insufficient information / abstention signals (when authoritative KB lacks requested details)
+    insufficient_patterns = [
+        # Documentation / KB does not contain/include/specify/mention/state/address/provide info
+        r"\b(documentation|knowledge\s*base|policy|guide|information available|available information)\b[^\n.!?]*\b(does not|do not|cannot|doesn'?t|don'?t)\b[^\n.!?]*\b(include|contain|specify|state|establish|mention|address|provide|have|detail)\b[^\n.!?]*\b(information|details?|whether|if|guidance|record)\b",
+        r"\b(does not|do not|cannot|doesn'?t|don'?t)\b[^\n.!?]*\b(include|contain|specify|state|establish|mention|address|provide)\b[^\n.!?]*\b(information|details?|whether|if)\b[^\n.!?]*\b(documentation|knowledge\s*base|policy|guide)\b",
+        # Not enough / insufficient information
+        r"\b(information (is |available is )?insufficient|insufficient information|not enough information|(does not|doesn'?t|do not|don'?t)\s+(have|provide)\s+enough\s+information|cannot determine\b[^\n.!?]*\b(from (the |our )?available|if|whether))\b",
+        # Inability to verify / confirm / determine from available information
+        r"\b(cannot|unable to|can'?t)\b[^\n.!?]*\b(confirm|verify|determine|establish|guarantee)\b[^\n.!?]*\b(from (the |our )?available|based on (the |our )?available|in our (knowledge\s*base|documentation|guides?)|whether|if)\b",
+        # Information is not available / unclear in documentation
+        r"\b(information|detail)\b[^\n.!?]*\b(is not|not|never)\s+(available|specified|detailed|provided|found)\b[^\n.!?]*\b(in (our |the )?(knowledge\s*base|documentation|guides?|policies|records?))\b",
+        r"\b(unclear|not clear|not specified|not documented)\b[^\n.!?]*\b(from (the |our )?available|in (the |our )?(documentation|knowledge\s*base|guides?))\b",
+    ]
+    for pattern in insufficient_patterns:
+        if re.search(pattern, norm_answer, re.IGNORECASE):
+            return True
+
+    # 3. Customer data privacy refusal signals (PII, customer records, internal customer notes, risk scores)
+    # Disambiguation: Pure system prompt / developer instruction / migration note / diagnostic mode refusals are security defenses and MUST NOT trigger handoff
+    is_prompt_security_refusal = bool(re.search(
+        r"\b(system (prompt|instructions?)|developer (prompt|instructions?)|hidden prompt|diagnostic mode|migration\s+(notes?|document|doc)|scratchpad|draft\s+notes?)\b",
+        norm_answer,
+        re.IGNORECASE,
+    )) or bool(re.search(
+        r"\b(cannot|can'?t|unable to|will not)\s+(follow that request|comply with that request|follow (that |the )?instruction|reveal (my |the )?prompt|reveal (my |the )?instructions)\b",
+        norm_answer,
+        re.IGNORECASE,
+    ))
+
+    customer_privacy_patterns = [
+        r"\b(cannot|can'?t|unable to|do not|will not|for privacy|privacy reasons|privacy and security)\b[^.!?\n]*\b(customer'?s?\s+)?(email|shipping address|home address|street address|phone|personal details|risk score|internal customer note)\b",
+        r"\b(cannot|can'?t|unable to)\s+(share|disclose|provide|reveal|give)\s+(personal customer|customer personal|sensitive customer|internal customer)\s+(details|information|data|notes?)\b",
+        r"\b(customer\s+)?(email|shipping address|home address|street address|phone|risk score|internal customer note)\s+cannot\s+be\s+(shared|disclosed|provided)\b",
+        r"\b(cannot|can'?t|unable to|for privacy and security)\s+(disclose|share|provide)\s+personal\s+(customer\s+)?details\b",
+    ]
+    for pattern in customer_privacy_patterns:
+        if re.search(pattern, norm_answer, re.IGNORECASE):
+            return True
+
+    # Prompt-security defense refusals (system prompt, developer instructions, migration notes) MUST NOT trigger handoff
+    if is_prompt_security_refusal:
+        return False
+
+    is_action_request = is_explicit_unsupported_action_request(user_message)
+
+    # 4. Unsupported customer action refusals (cancellations, refunds, replacements, address changes, price adjustments, discounts)
+    unsupported_action_patterns = [
+        r"\b(cannot|can'?t|unable to|not able to|do not have the ability to|cannot directly)\s+(cancel|process (a |the |your )?refund|issue (a |the |your )?refund|credit (the |your |my )?order|process (a |the |your )?cancellation|make changes to|change (the |your )?(shipping )?address|update (the |your )?(shipping )?address|replace|issue (a |the |your )?replacement|apply (a |the |your )?(price )?adjustment|process (a |the |your )?(price )?adjustment|apply (a |the |your )?discount|process (a |the |your )?discount)\b",
+        r"\b(cannot|can'?t|unable to)\s+(perform|complete|process|apply|credit)\s+(account or order actions|cancellations|refunds|replacements|address changes|price adjustments|discounts|your order)\b",
+    ]
+    for pattern in unsupported_action_patterns:
+        if re.search(pattern, norm_answer, re.IGNORECASE):
+            # If user asked an informational question rather than an operational action request,
+            # explaining that price adjustments or discounts do not apply is policy guidance, not an escalation.
+            if not is_action_request and re.search(r"\b(price\s*adjustments?|discounts?|promot\w*|coupon|flash\s*sale|clearance)\b", norm_answer, re.IGNORECASE):
+                continue
+            return True
+
+    # If the user explicitly requested an unsupported action and the response declines or directs to support, hand off
+    if is_action_request and re.search(r"\b(cannot|can'?t|unable to|support (team|specialist|agent)?|contact)\b", norm_answer, re.IGNORECASE):
+        return True
+
+    # 5. Abstention on unverified / high-risk care methods (submersion, boiling water, extreme heat)
+    care_abstention_patterns = [
+        r"\b(warns? against|do not recommend|does not recommend|cannot recommend|not recommended|avoid|never recommend|should not|cannot)\b[^\n.!?]*\b(submerg\w*|boil\w*|extreme heat|machine wash\w*|sanitiz\w*|hot water|harsh chemical\w*)",
+        r"\b(submerg\w*|boil\w*|extreme heat|machine wash\w*|sanitiz\w*)\b[^\n.!?]*\b(is not|not|never)\s+(recommended|covered|authorized|supported|advised|safe|permitted)\b",
+        r"\b(does not|do not|cannot|warns? against)\s+(recommend|support|advise|authorize|permit|allow)\b[^\n.!?]*\b(submerg\w*|boil\w*|extreme heat)",
+    ]
+    for pattern in care_abstention_patterns:
+        if re.search(pattern, norm_answer, re.IGNORECASE):
+            return True
+
+    # 6. Human review / exception review & explicit escalation (damaged items on final sale, exceptions, claim reviews)
+    review_escalation_patterns = [
+        # Damaged / defective item review & photo verification
+        r"\b(damaged|defective|broken|damage claim)\b[^\n.!?]*\b(review|reviewed|approval|approve|exception|photo\w*|verification|inspect\w*)\b",
+        r"\b(review|reviewed|approval|approve|exception)\b[^\n.!?]*\b(damaged|defective|broken|damage claim)\b",
+        # Final sale damaged exception context
+        r"\b(final[-\s]sale)\b[^\n.!?]*\b(damaged|defective|broken)\b[^\n.!?]*\b(exception|review\w*|approval|support|claim)\b",
+        r"\b(final[-\s]sale)\b[^\n.!?]*\b(exception|review\w*|approval)\b[^\n.!?]*\b(damaged|defective|broken)\b",
+        # Photo verification / review
+        r"\b(photo\w*|image\w*)\b[^\n.!?]*\b(review\w*|verification|inspect\w*|submit|approv\w*)\b",
+        # Human / Specialist manual review or investigation
+        r"\b(human|specialist|manual)\s+(review\w*|approval|investigation|evaluation)\b",
+        r"\b(review\w*|approval)\s+by\s+(a\s+)?(human|specialist|support\s+(team|agent|specialist))\b",
+        # Damage / Warranty claim review
+        r"\b(damage\s+claim|damaged\s+item\s+exception|warranty\s+claim|exception\s+claim)\b[^\n.!?]*\b(review\w*|approv\w*|investigat\w*|process\w*|support)\b",
+        # Review before approval / required review
+        r"\b(review\w*|approval)\s+before\s+(approval|processing|replacement|refund)\b",
+        r"\b(requires?|needs?|subject to|eligible for)\s+(human |manual |support |specialist )?(review\w*|approval|investigation)\b",
+        # Direct human transfer / escalation
+        r"\b(transfer(ring)? (you )?to a human|escalat(e|ing) (this )?to|speak with a human|connect(ing)? with a human|connect you with a human|confirm with (a )?human|recommend(ing)? (confirming|checking) with (a )?(human|support\s+(agent|specialist)))\b",
+    ]
+    for pattern in review_escalation_patterns:
+        if re.search(pattern, norm_answer, re.IGNORECASE):
             return True
 
     return False
@@ -395,15 +553,16 @@ def enforce_safety_guardrails(
     answer: str,
     executed_tools: list[tuple[str, dict[str, Any]]],
     hard_handoff: bool,
+    user_message: str = "",
 ) -> tuple[str, bool]:
     """Enforce deterministic application-level safety safeguards on final response and handoff flag.
 
     Safeguards:
     1. Guard against false claims of completing unsupported actions (cancellations, refunds, address changes).
     2. Guard against false arrival claims on cancelled or returned orders.
-    3. Ensure handoff=True when hard_handoff is triggered (e.g. exception orders).
+    3. Ensure handoff=True when hard_handoff is triggered (e.g. exception orders, unknown orders).
     """
-    final_handoff = detect_source_conflict_or_handoff(answer, hard_handoff)
+    final_handoff = detect_source_conflict_or_handoff(answer, hard_handoff, user_message=user_message)
     sanitized_answer = answer
 
     # Guard against false completion claims for unsupported actions
@@ -445,7 +604,20 @@ def enforce_safety_guardrails(
                             )
                         break
 
+    # Clean hallucinated fake order details if lookup failed or was unauthenticated
+    for tool_name, tool_result in executed_tools:
+        if tool_name == "lookup_order":
+            if tool_result.get("found") is False:
+                # Order not found: ensure response clearly states not found
+                if "order not found" not in sanitized_answer.lower() and "unable to find" not in sanitized_answer.lower():
+                    sanitized_answer += "\n\n(Note: Order could not be found in our system.)"
+
     return sanitized_answer, final_handoff
+
+
+# ====================================================================
+# AGENT RUNTIME ORCHESTRATION (PHASE 4C)
+# ====================================================================
 
 
 def handle_turn(
@@ -453,26 +625,27 @@ def handle_turn(
     user_message: str,
     client: Groq | None = None,
 ) -> dict[str, Any]:
-    """Process a single turn of multi-turn conversation with the Aster & Row customer support AI agent.
-
-    Maintains isolated session state across turns, preserves conversation history,
-    and manages last_order_id context.
-
-    Args:
-        session_id: Unique identifier for the user session.
-        user_message: The user's input message for this turn.
-        client: Optional Groq client override (useful for testing/mocking).
+    """Execute a single conversation turn against Groq Chat Completions API with tool execution loop.
 
     Returns:
-        dict[str, Any]: Structured dictionary with keys:
-            - answer: Final text response.
-            - sources: List of cited source identifiers.
-            - tool_calls: List of recorded tool call dicts for this turn.
-            - handoff: Boolean flag indicating if human handoff is needed.
+        dict with keys:
+            - 'answer' (str): Final assistant response text.
+            - 'sources' (list[str]): Cited authoritative document references.
+            - 'tool_calls' (list[dict]): Tool calls executed during this turn.
+            - 'handoff' (bool): True if human escalation or review is required.
     """
+    if not user_message or not user_message.strip():
+        return {
+            "answer": "How can I assist you with your Aster & Row order or questions today?",
+            "sources": [],
+            "tool_calls": [],
+            "handoff": False,
+        }
+
+    session = get_session(session_id)
     try:
         groq_client = client or get_groq_client()
-    except Exception as e:
+    except Exception:
         return {
             "answer": (
                 "I apologize, but the customer support assistant is currently unavailable due to a "
@@ -483,26 +656,81 @@ def handle_turn(
             "handoff": True,
         }
 
-    session = get_session(session_id)
+    # Contextual order ID resolution: if user message references order without explicit ID, inject last_order_id context
+    user_input_text = user_message.strip()
 
-    # Construct conversation messages with system prompt, historical messages, and current user message
+    # Prepare message list for Groq API
     messages: list[dict[str, Any]] = [
         {"role": "system", "content": SYSTEM_PROMPT},
-        *session.messages,
-        {"role": "user", "content": user_message},
     ]
 
-    turn_new_messages: list[dict[str, Any]] = [
-        {"role": "user", "content": user_message}
-    ]
+    # Append prior conversation history from session
+    messages.extend(session.messages)
+
+    # Append current user turn
+    current_user_msg = {"role": "user", "content": user_input_text}
+    messages.append(current_user_msg)
+
+    # Track tools and messages created during this turn
+    turn_new_messages: list[dict[str, Any]] = [current_user_msg]
     recorded_tool_calls: list[dict[str, Any]] = []
-    executed_tools: list[tuple[str, dict[str, Any]]] = []
     candidate_sources: list[str] = []
+    executed_tools: list[tuple[str, dict[str, Any]]] = []
     hard_handoff_triggered = False
 
-    rounds = 0
-    while rounds < MAX_TOOL_ROUNDS:
-        rounds += 1
+    # Pre-tool routing guard: when a customer query references unapproved migration notes while asking about return policy,
+    # deterministically route through retrieve_knowledge_base so the model receives the authoritative return policy context
+    # instead of halting immediately on raw refusal without authoritative citations.
+    migration_return_patterns = [
+        r"\b(migration\s+note|migration|draft\s+note|scratchpad)\b[^\n.!?]*\b(return|policy|60\s*day|refund|approve)\b",
+        r"\b(return|policy|60\s*day|refund|approve)\b[^\n.!?]*\b(migration\s+note|migration|draft\s+note|scratchpad)\b",
+    ]
+    if any(re.search(pat, user_input_text, re.IGNORECASE) for pat in migration_return_patterns):
+        kb_query = "standard return policy window 30 days exceptions"
+        kb_result, kb_sources, _ = execute_tool(
+            "retrieve_knowledge_base",
+            json.dumps({"query": kb_query}),
+        )
+        pre_tool_call_id = "call_kb_returns_policy"
+        recorded_tool_calls.append({
+            "name": "retrieve_knowledge_base",
+            "arguments": {"query": kb_query},
+        })
+        for src in kb_sources:
+            if src not in candidate_sources:
+                candidate_sources.append(src)
+            if src not in session.candidate_sources:
+                session.candidate_sources.append(src)
+        executed_tools.append(("retrieve_knowledge_base", kb_result))
+
+        assistant_pre_msg: dict[str, Any] = {
+            "role": "assistant",
+            "content": "",
+            "tool_calls": [
+                {
+                    "id": pre_tool_call_id,
+                    "type": "function",
+                    "function": {
+                        "name": "retrieve_knowledge_base",
+                        "arguments": json.dumps({"query": kb_query}),
+                    },
+                }
+            ],
+        }
+        tool_content_payload = f"{UNTRUSTED_TOOL_DATA_HEADER}{json.dumps(kb_result)}"
+        tool_pre_resp_msg: dict[str, Any] = {
+            "role": "tool",
+            "tool_call_id": pre_tool_call_id,
+            "name": "retrieve_knowledge_base",
+            "content": tool_content_payload,
+        }
+        messages.append(assistant_pre_msg)
+        messages.append(tool_pre_resp_msg)
+        turn_new_messages.append(assistant_pre_msg)
+        turn_new_messages.append(tool_pre_resp_msg)
+
+    # Tool calling loop
+    for _round in range(MAX_TOOL_ROUNDS):
         try:
             response = groq_client.chat.completions.create(
                 model=MODEL_NAME,
@@ -512,11 +740,12 @@ def handle_turn(
                 temperature=0.0,
             )
         except Exception as e:
+            fallback_text = (
+                "I apologize, but I am currently unable to process your request. "
+                "Please contact Aster & Row customer support for assistance."
+            )
             return {
-                "answer": (
-                    "I apologize, but I encountered a system error while processing your request. "
-                    "Please try again or reach out to our customer support team for assistance."
-                ),
+                "answer": fallback_text,
                 "sources": [],
                 "tool_calls": recorded_tool_calls,
                 "handoff": True,
@@ -525,17 +754,29 @@ def handle_turn(
         choice = response.choices[0]
         msg = choice.message
 
-        # Check if the model requested tool calls
         if msg.tool_calls:
-            # Append assistant message with tool calls
-            messages.append(msg)
-            turn_new_messages.append(msg)
+            # Assistant requested tool call(s)
+            assistant_tool_call_msg: dict[str, Any] = {
+                "role": "assistant",
+                "content": msg.content or "",
+                "tool_calls": [
+                    {
+                        "id": tc.id,
+                        "type": "function",
+                        "function": {
+                            "name": tc.function.name,
+                            "arguments": tc.function.arguments,
+                        },
+                    }
+                    for tc in msg.tool_calls
+                ],
+            }
+            messages.append(assistant_tool_call_msg)
+            turn_new_messages.append(assistant_tool_call_msg)
 
             for tool_call in msg.tool_calls:
                 t_name = tool_call.function.name
-                t_args_raw = tool_call.function.arguments or "{}"
-
-                # Parse arguments for recording
+                t_args_raw = tool_call.function.arguments
                 try:
                     t_args_parsed = json.loads(t_args_raw) if isinstance(t_args_raw, str) else t_args_raw
                 except Exception:
@@ -550,11 +791,9 @@ def handle_turn(
                 tool_result, sources, handoff_flag = execute_tool(t_name, t_args_raw)
                 executed_tools.append((t_name, tool_result))
 
-                # If lookup_order succeeded with a valid order ID, update last_order_id in session
+                # Update session state with last resolved order_id if present
                 if t_name == "lookup_order" and tool_result.get("found") is True:
-                    resolved_order_id = tool_result.get("order_id")
-                    if resolved_order_id:
-                        session.last_order_id = resolved_order_id
+                    session.last_order_id = tool_result.get("order_id")
 
                 if handoff_flag:
                     hard_handoff_triggered = True
@@ -562,6 +801,8 @@ def handle_turn(
                 for src in sources:
                     if src not in candidate_sources:
                         candidate_sources.append(src)
+                    if src not in session.candidate_sources:
+                        session.candidate_sources.append(src)
 
                 # Format tool content explicitly labeled as untrusted data
                 tool_content_payload = f"{UNTRUSTED_TOOL_DATA_HEADER}{json.dumps(tool_result)}"
@@ -578,10 +819,11 @@ def handle_turn(
             # Normal completion without tool calls
             raw_text = (msg.content or "").strip()
             final_text, final_handoff = enforce_safety_guardrails(
-                raw_text, executed_tools, hard_handoff_triggered
+                raw_text, executed_tools, hard_handoff_triggered, user_message=user_input_text
             )
+            effective_candidates = candidate_sources if candidate_sources else session.candidate_sources
             cited_sources = extract_cited_sources(
-                final_text, candidate_sources, executed_tools=executed_tools
+                final_text, effective_candidates, executed_tools=executed_tools
             )
 
             # Record final assistant response in session history
@@ -607,10 +849,11 @@ def handle_turn(
         raw_text = "I apologize, but I was unable to complete your request. Please reach out to customer support."
 
     final_text, final_handoff = enforce_safety_guardrails(
-        raw_text, executed_tools, hard_handoff_triggered
+        raw_text, executed_tools, hard_handoff_triggered, user_message=user_input_text
     )
+    effective_candidates = candidate_sources if candidate_sources else session.candidate_sources
     cited_sources = extract_cited_sources(
-        final_text, candidate_sources, executed_tools=executed_tools
+        final_text, effective_candidates, executed_tools=executed_tools
     )
 
     turn_new_messages.append({"role": "assistant", "content": final_text})
