@@ -9,6 +9,12 @@ This repository contains the customer support AI agent for Aster & Row, a fictio
 
 The core challenge addressed by this project is reliable behavior over an imperfect, realistic knowledge base. The system reconciles conflicting documents by checking frontmatter metadata to prefer current active policies over superseded legacy files, sanitizes order data to protect customer privacy, maintains conversation context across multiple turns, defends against prompt injection attempts embedded in queries or documents, and enforces deterministic human handoff when information is insufficient or actions cannot be automated.
 
+## Demo Video
+
+A short walkthrough of the Aster & Row Customer Support AI Agent:
+
+[Watch the demo video](https://drive.google.com/file/d/14g_piOP2h04Saja7lfx5xdFkpG98s0OI/view?usp=sharing)
+
 ## Features
 
 - Knowledge-base retrieval: Dense vector search over Markdown documentation using local Sentence Transformers embeddings, augmented with YAML frontmatter parsing to evaluate document status, audience, and policy authority.
@@ -275,14 +281,3 @@ Antigravity IDE was used during development for repository inspection, implement
 The generated suggestions were reviewed and tested against the project's pytest suite and live evaluation cases rather than being accepted blindly.
 
 One example of an incorrect suggestion was treating phrases such as "cannot apply" as automatic evidence of a required human handoff. This caused informational price-adjustment policy explanations to be classified as unsupported operational actions. The logic was corrected to distinguish the user's intent from the wording of the generated response.
-
-## Video Demonstration
-
-Demo video will be added before final submission.
-
-The demonstration will cover:
-1. Grounded policy retrieval with bracketed source citations (30-day vs. 45-day TrailPlus return windows).
-2. Sanitized order lookup verifying status and carrier details while suppressing private PII.
-3. Multi-turn conversation maintaining country and order context across turns.
-4. Safe abstention on unverified care methods with human handoff escalation.
-5. Execution of the automated test suite and evaluation runner.
